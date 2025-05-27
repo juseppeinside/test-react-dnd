@@ -103,7 +103,7 @@ const ItemList = () => {
   const [page, setPage] = React.useState(1);
   const [totalItems, setTotalItems] = React.useState(0);
   const [totalPages, setTotalPages] = React.useState(0);
-  const [order, setOrder] = React.useState([]);
+  const [, setOrder] = React.useState([]);
   const [isDragging, setIsDragging] = React.useState(false);
   const [isLoadingMore, setIsLoadingMore] = React.useState(false);
   const [sortConfig, setSortConfig] = React.useState({
@@ -114,72 +114,7 @@ const ItemList = () => {
   const tableContainerRef = React.useRef(null);
   const limit = 20;
 
-  React.useEffect(() => {
-    const checkScrollForLoading = () => {
-      const container = tableContainerRef.current;
-      if (!container || loading || isDragging || isLoadingMore) return;
-
-      const { scrollTop, clientHeight, scrollHeight } = container;
-      const scrollPosition = scrollTop + clientHeight;
-      const scrollThreshold = scrollHeight * 0.8;
-
-      if (
-        scrollPosition > scrollThreshold &&
-        page < totalPages &&
-        items.length < totalItems
-      ) {
-        setIsLoadingMore(true);
-        setPage((prevPage) => prevPage + 1);
-      }
-    };
-
-    const containerElement = tableContainerRef.current;
-    if (containerElement) {
-      containerElement.addEventListener("scroll", checkScrollForLoading);
-    }
-
-    return () => {
-      if (containerElement) {
-        containerElement.removeEventListener("scroll", checkScrollForLoading);
-      }
-    };
-  }, [
-    loading,
-    isDragging,
-    isLoadingMore,
-    page,
-    totalPages,
-    items.length,
-    totalItems,
-  ]);
-
-  React.useEffect(() => {
-    if (isDragging && tableContainerRef.current) {
-      const originalOverflow = tableContainerRef.current.style.overflowY;
-      tableContainerRef.current.style.overflowY = "hidden";
-      return () => {
-        if (tableContainerRef.current) {
-          tableContainerRef.current.style.overflowY = originalOverflow;
-        }
-      };
-    }
-  }, [isDragging]);
-
-  React.useEffect(() => {
-    fetchItems();
-  }, []);
-
-  React.useEffect(() => {
-    if (!isDragging) {
-      fetchItems();
-    }
-  }, [search, page, isDragging]);
-
-  React.useEffect(() => {
-    setIsLoadingMore(false);
-  }, [items]);
-
-  const fetchItems = async () => {
+  const fetchItems = React.useCallback(async () => {
     try {
       setLoading(true);
 
@@ -213,7 +148,76 @@ const ItemList = () => {
       setLoading(false);
       setIsLoadingMore(false);
     }
-  };
+  }, [page, limit, search]);
+
+  React.useEffect(() => {
+    const checkScrollForLoading = () => {
+      const container = tableContainerRef.current;
+      if (!container || loading || isDragging || isLoadingMore) return;
+
+      const { scrollTop, clientHeight, scrollHeight } = container;
+      const scrollPosition = scrollTop + clientHeight;
+      const scrollThreshold = scrollHeight * 0.8;
+
+      if (
+        scrollPosition > scrollThreshold &&
+        page < totalPages &&
+        items.length < totalItems
+      ) {
+        setIsLoadingMore(true);
+        setPage((prevPage) => prevPage + 1);
+      }
+    };
+
+    const containerElement = tableContainerRef.current;
+    if (containerElement) {
+      const currentContainerElement = containerElement;
+      currentContainerElement.addEventListener("scroll", checkScrollForLoading);
+
+      return () => {
+        currentContainerElement.removeEventListener(
+          "scroll",
+          checkScrollForLoading
+        );
+      };
+    }
+    return undefined;
+  }, [
+    loading,
+    isDragging,
+    isLoadingMore,
+    page,
+    totalPages,
+    items.length,
+    totalItems,
+  ]);
+
+  React.useEffect(() => {
+    if (isDragging && tableContainerRef.current) {
+      const originalOverflow = tableContainerRef.current.style.overflowY;
+      const currentTableContainer = tableContainerRef.current;
+      currentTableContainer.style.overflowY = "hidden";
+      return () => {
+        if (currentTableContainer) {
+          currentTableContainer.style.overflowY = originalOverflow;
+        }
+      };
+    }
+  }, [isDragging]);
+
+  React.useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  React.useEffect(() => {
+    if (!isDragging) {
+      fetchItems();
+    }
+  }, [search, page, isDragging, fetchItems]);
+
+  React.useEffect(() => {
+    setIsLoadingMore(false);
+  }, [items]);
 
   const sortedItems = React.useMemo(() => {
     let sortableItems = [...items];
