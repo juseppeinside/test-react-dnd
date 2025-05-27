@@ -3,7 +3,8 @@ import axios from "axios";
 import { useDrag, useDrop, DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL =
+  process.env.NODE_ENV === "production" ? "/api" : "http://localhost:5000/api";
 
 const ItemTypes = {
   ROW: "row",
